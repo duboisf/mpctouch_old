@@ -27,10 +27,10 @@ download artifact(JAVA_MPD) => "http://javampd.googlecode.com/files/javampd-#{JA
 
 JERSEY_LIBS = [JERSEY_CORE_SERVER, JERSEY_CORE_CLIENT, JERSEY_CORE, JERSEY_JSON, JSR311_API, ASM]
 
-task :deploy => ["sencha_mpc:deploy"]
+task :deploy => ["mpctouch:deploy"]
 
-desc "The Sencha music player server"
-define "sencha_mpc" do
+desc "mpctouch: an mpd webapp client"
+define "mpctouch" do
 
     project.version = VERSION_NUMBER
     project.group = GROUP
@@ -44,7 +44,7 @@ define "sencha_mpc" do
     package(:war).include _('src/ressources/*')
 
     task :deploy => :package do
-        File.move('target/sencha_mpc-1.0.0.war', 'target/mpc.war')
+        File.move('target/mpctouch-1.0.0.war', 'target/mpctouch.war')
     end
 
     task :deps => :compile do

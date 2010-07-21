@@ -19,7 +19,7 @@ Ext.setup({
     glossOnIcon: false,
     onReady: function () {
 
-        function cmdRequest ( opts ) {
+        function playerRequest ( opts ) {
 
             opts.callback = opts.callback || function ( success, resp ) {
                 if ( !success ) {
@@ -27,13 +27,13 @@ Ext.setup({
                 }
             }
             
-            opts.method = opts.method || 'GET';
+            opts.method = opts.method || 'PUT';
 
             opts.params = opts.params || {};
 
             return function () {
                 Ext.Ajax.request({
-                    url: '/mpc/ressource/player/' + opts.command,
+                    url: '/mpctouch/ressource/player/' + opts.command,
                     method: opts.method,
                     success: opts.callback.curry( true ),
                     failure: opts.callback.curry( false ),
@@ -59,19 +59,17 @@ Ext.setup({
         var slider = new Ext.form.Slider({});
 
         // Fetch initial volume value to setup slide, then add change listener
-        cmdRequest({
+        playerRequest({
             command: 'volume',
+            method: 'GET',
             callback: function ( success, resp ) {
                 if ( success ) {
                     var json = Ext.decode( resp.responseText );
                     slider.setValue( json.volume );
                     slider.on( 'change', function ( slider, thumb, oldVal, newVal ) {
-                        cmdRequest({
-                            command: 'volume',
-                            method: 'POST',
-                            params: {
-                                value: newVal
-                            }
+                        playerRequest({
+                            command: 'volume/' + newVal,
+                            method: 'PUT'
                         })();
                     });
                 }
@@ -94,16 +92,16 @@ Ext.setup({
                 },
                 items: [{
                     text: 'prev',
-                    handler: cmdRequest( { command: 'prev' } )
+                    handler: playerRequest( { command: 'prev' } )
                 }, {
                     text: 'stop',
-                    handler: cmdRequest( { command: 'stop' } )
+                    handler: playerRequest( { command: 'stop' } )
                 }, {
                     text: 'play',
-                    handler: cmdRequest( { command: 'play' } )
+                    handler: playerRequest( { command: 'play' } )
                 }, {
                     text: 'next',
-                    handler: cmdRequest( { command: 'next' } )
+                    handler: playerRequest( { command: 'next' } )
                 }]
             }, slider
             ]
