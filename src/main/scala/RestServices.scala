@@ -23,7 +23,6 @@ class Player {
       case "stop" => player.stop()
       case "next" => player.playNext()
       case "prev" => player.playPrev()
-      case "volume" => return "{\"success\":true,\"volume\":" + player.getVolume() + "}"
       case _ => throw new WebApplicationException(400)
     }
     return success
@@ -51,24 +50,3 @@ class Player {
   }
 }
 
-@Path("/json")
-class JSONTest {
-
-  @GET
-  @Produces(Array("application/json"))
-  def doGet: String = return "{\"success\":true}"
-}
-
-@XmlRootElement
-class User() {
-
-  private var name: String = _
-
-  def this(_name: String) {
-    this()
-    name = _name
-  }
-
-  def getName = name
-  def setName(_name: String) = name = _name
-}
