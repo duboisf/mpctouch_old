@@ -1,0 +1,7 @@
+Small webapp that acts as a frontend to mpd, the music player daemon.
+
+To build .war file, you need buildr. Just run the following
+
+$ buildr deploy
+
+This will generate the file senchampc.war in the target directory. Just drop this file in the tomcat webapp folder.
