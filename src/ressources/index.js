@@ -33,7 +33,7 @@ Ext.setup({
 
             return function () {
                 Ext.Ajax.request({
-                    url: '/mpctouch/ressources/player/' + opts.command,
+                    url: '/mpctouch/ressources/player' + opts.command,
                     method: opts.method,
                     success: opts.callback.curry( true ),
                     failure: opts.callback.curry( false ),
@@ -60,7 +60,7 @@ Ext.setup({
 
         // Fetch initial volume value to setup slide, then add change listener
         playerRequest({
-            command: 'volume',
+            command: '/volume',
             method: 'GET',
             callback: function ( success, resp ) {
                 if ( success ) {
@@ -68,7 +68,7 @@ Ext.setup({
                     slider.setValue( json.volume );
                     slider.on( 'change', function ( slider, thumb, oldVal, newVal ) {
                         playerRequest({
-                            command: 'volume/' + newVal,
+                            command: '/volume/' + newVal,
                             method: 'PUT'
                         })();
                     });
@@ -92,16 +92,16 @@ Ext.setup({
                 },
                 items: [{
                     text: 'prev',
-                    handler: playerRequest( { command: 'prev' } )
+                    handler: playerRequest( { command: '/command/prev' } )
                 }, {
                     text: 'stop',
-                    handler: playerRequest( { command: 'stop' } )
+                    handler: playerRequest( { command: '/command/stop' } )
                 }, {
                     text: 'play',
-                    handler: playerRequest( { command: 'play' } )
+                    handler: playerRequest( { command: '/command/play' } )
                 }, {
                     text: 'next',
-                    handler: playerRequest( { command: 'next' } )
+                    handler: playerRequest( { command: '/command/next' } )
                 }]
             }, slider
             ]
