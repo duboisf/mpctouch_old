@@ -33,7 +33,7 @@ Ext.setup({
 
             return function () {
                 Ext.Ajax.request({
-                    url: '/mpctouch/ressource/player/' + opts.command,
+                    url: '/mpctouch/ressources/player/' + opts.command,
                     method: opts.method,
                     success: opts.callback.curry( true ),
                     failure: opts.callback.curry( false ),

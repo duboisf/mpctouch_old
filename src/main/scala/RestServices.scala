@@ -1,5 +1,6 @@
 import javax.ws.rs._
 import org.bff.javampd._
+import org.bff.javampd.objects.MPDSong
 import org.bff.javampd.exception._
 import javax.xml.bind.annotation._
  
@@ -10,7 +11,7 @@ object Mpd {
 }
 
 @Path("/player/{command}")
-class Player {
+class PlayerCommand {
 
   protected val player = Mpd.player
   protected val success: String = "{\"success\":true}"
@@ -43,10 +44,10 @@ class Player {
   @GET
   @Produces(Array("application/json"))
   def doGet(@PathParam("command") command: String): String = {
-    if (command != "volume") {
-      throw new WebApplicationException(400)
+    command match {
+      case "volume" => return "{\"success\":true,\"volume\":" + player.getVolume() + "}"
+      case "song" => return "{\"success\":true,\"song\":" + player.getCurrentSong.toString() + "}"
     }
-    return "{\"success\":true,\"volume\":" + player.getVolume() + "}"
+    throw new WebApplicationException(400)
   }
 }
-

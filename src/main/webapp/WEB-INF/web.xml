@@ -11,7 +11,7 @@
    </servlet>
    <servlet-mapping>
       <servlet-name>ServletAdaptor</servlet-name>
-      <url-pattern>/ressource/*</url-pattern>
+      <url-pattern>/ressources/*</url-pattern>
    </servlet-mapping>
    <session-config>
       <session-timeout>30</session-timeout>

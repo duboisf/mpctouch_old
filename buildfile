@@ -47,7 +47,7 @@ define "mpctouch" do
         File.move('target/mpctouch-1.0.0.war', 'target/mpctouch.war')
     end
 
-    task :deps => :compile do
+    task :deps do
       puts 'compile.dependencies: ', compile.dependencies
     end
 
