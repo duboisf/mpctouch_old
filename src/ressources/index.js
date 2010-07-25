@@ -1,7 +1,3 @@
-//Object.prototype.method = function ( name, func ) {
-//    this[name] = func;
-//}
-
 Function.prototype.curry = function () {
     var slice = Array.prototype.slice,
         args = slice.apply(arguments),
@@ -19,7 +15,7 @@ Ext.setup({
     glossOnIcon: false,
     onReady: function () {
 
-        function playerRequest ( opts ) {
+        function playerRequest ( method, opts ) {
 
             opts.callback = opts.callback || function ( success, resp ) {
                 if ( !success ) {
@@ -27,54 +23,77 @@ Ext.setup({
                 }
             }
             
-            opts.method = opts.method || 'PUT';
+            method = method || 'PUT';
 
             opts.params = opts.params || {};
 
-            return function () {
-                Ext.Ajax.request({
+            Ext.Ajax.request({
                     url: '/mpctouch/ressources/player' + opts.command,
-                    method: opts.method,
+                    method: method,
                     success: opts.callback.curry( true ),
                     failure: opts.callback.curry( false ),
                     params: opts.params
-                });
-            }
+            });
         }
 
-        var carousel1 = new Ext.Carousel({
+        var playerGetRequest = playerRequest.curry( 'GET' );
+        var playerPutRequest = playerRequest.curry( 'PUT' );
+        var playerPostRequest = playerRequest.curry( 'POST' );
+        var playerDeleteRequest = playerRequest.curry( 'DELETE' );
+
+        var currentSongPanel = new Ext.Panel( {} );
+
+        currentSongPanel.update( 'Test' );
+
+        var playlistPanel = new Ext.Panel( {} );
+
+        var carousel = new Ext.Carousel({
             flex: 1,
             animation: 'cube',
-            items: [{
-              html: '<h1>Carousel</h1><p>Navigate the two carousels on this page by swiping left/right or clicking on one side of the circle indicators below.</p>'
-            }, {
-              title: 'Tab 2',
-              html: '2'
-            }, {
+            items: [
+                currentSongPanel,
+                playlistPanel,
+            {
               title: 'Tab 3',
               html: '3'
             }]
         });
 
+        carousel.updateContent = function () {
+            playerGetRequest({
+                command: '/song',
+                callback: function ( success, resp ) {
+                    if ( success ) {
+                        var song = Ext.decode( resp.responseText );
+                        var html = [];
+                        for ( var prop in song ) {
+                            if ( !( song[prop] instanceof Function ) ) {
+                                html.push( prop + ': ' + song[prop] );
+                            }
+                        }
+                        currentSongPanel.update( html.join( '<br>' ) );
+                    }
+                }
+            });
+        };
+
         var slider = new Ext.form.Slider({});
 
         // Fetch initial volume value to setup slide, then add change listener
-        playerRequest({
+        playerGetRequest({
             command: '/volume',
-            method: 'GET',
             callback: function ( success, resp ) {
                 if ( success ) {
                     var json = Ext.decode( resp.responseText );
                     slider.setValue( json.volume );
                     slider.on( 'change', function ( slider, thumb, oldVal, newVal ) {
-                        playerRequest({
-                            command: '/volume/' + newVal,
-                            method: 'PUT'
-                        })();
+                        playerPutRequest( { command: '/volume/' + newVal } );
                     });
                 }
             }
-        })();
+        });
+
+        carousel.updateContent();
 
         var controls = new Ext.Panel({
             layout: {
@@ -92,16 +111,22 @@ Ext.setup({
                 },
                 items: [{
                     text: 'prev',
-                    handler: playerRequest( { command: '/command/prev' } )
+                    handler: playerPutRequest.curry({
+                        command: '/command/prev',
+                        callback: carousel.updateContent
+                    })
                 }, {
                     text: 'stop',
-                    handler: playerRequest( { command: '/command/stop' } )
+                    handler: playerPutRequest.curry( { command: '/command/stop' } )
                 }, {
                     text: 'play',
-                    handler: playerRequest( { command: '/command/play' } )
+                    handler: playerPutRequest.curry( { command: '/command/play' } )
                 }, {
                     text: 'next',
-                    handler: playerRequest( { command: '/command/next' } )
+                    handler: playerPutRequest.curry({
+                        command: '/command/next',
+                        callback: carousel.updateContent
+                    })
                 }]
             }, slider
             ]
@@ -113,7 +138,7 @@ Ext.setup({
                 type: 'vbox',
                 align: 'stretch'
             },
-            items: [ carousel1, controls ]
+            items: [ carousel, controls ]
         });
     }
 })
