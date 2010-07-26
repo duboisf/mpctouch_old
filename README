@@ -4,4 +4,4 @@ To build .war file, you need buildr. Just run the following
 
 $ buildr deploy
 
-This will generate the file senchampc.war in the target directory. Just drop this file in the tomcat webapp folder.
+This will generate the file mpctouch.war in the target directory. Just drop this file in the tomcat webapp folder.

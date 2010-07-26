@@ -3,18 +3,20 @@ import org.bff.javampd._
 import org.bff.javampd.objects._
 import org.bff.javampd.exception._
 import javax.xml.bind.annotation._
+import collection.jcl.BufferWrapper
  
 object Mpd {
 
     private val mpd = new MPD("localhost", 6600)
     val player = mpd.getMPDPlayer()
+    val playlist = mpd.getMPDPlaylist()
 }
 
 @Path("/player")
-class PlayerCommand {
+class Player {
 
-  protected val player = Mpd.player
-  protected val success: String = "{\"success\":true}"
+  private val player = Mpd.player
+  private val success: String = "{\"success\":true}"
 
   @PUT
   @Path("/command/{command}")
@@ -47,7 +49,7 @@ class PlayerCommand {
   def doGetVolume() = "{\"success\":true,\"volume\":" + player.getVolume() + "}"
 
   @GET
-  @Path("/song")
+  @Path("/song/current")
   @Produces(Array("application/json"))
   def doGet(): Song = {
     if (player.getCurrentSong != null) {
@@ -58,35 +60,41 @@ class PlayerCommand {
   }
 }
 
-class Person(private var name: String, private var age: Int) {
+@Path("/playlist")
+class Playlist {
 
-  def this() = this("Jane", 25)
+  private val playlist = Mpd.playlist
 
-  def getName = name
-  def setName(newname: String) {
-    name = newname
+  // Convert java.util.List to scala Seq
+  implicit def javaList2Seq[T](javaList: java.util.List[T]) : BufferWrapper[T] = {
+    new BufferWrapper[T]() { 
+      def underlying = javaList
+    }
   }
 
-  def getAge = age
-  def setAge(newage: Int) {
-    age = newage
+  @GET
+  @Path("/song/list")
+  @Produces(Array("application/json"))
+  //def doGetSongList = playlist.getSongList().map( new Song(_) )
+  def doGetSongList: java.util.List[Song] = {
+    val mpdsongs = playlist.getSongList()
+    val it = mpdsongs.iterator
+    val songs: java.util.List[Song] = new java.util.ArrayList()
+    while (it.hasNext) {
+      songs.add(new Song(it.next))  
+    }
+    return songs
   }
-}
-
-@XmlRootElement
-class Person2(private var name: String, private var age: Int) extends Person(name, age) {
-  
-  def this() = this("", 0)
 }
 
 @XmlRootElement
 class Song(song: MPDSong) {
 
-  private var album = song.getAlbum().toString()
-  private var artist = song.getArtist().toString()
+  private var album = safeToString(song.getAlbum())
+  private var artist = safeToString(song.getArtist())
   private var comment = song.getComment()
   private var file = song.getFile()
-  private var genre = song.getGenre().toString()
+  private var genre = safeToString(song.getGenre())
   private var id = song.getId()
   private var length = song.getLength()
   private var position = song.getPosition()
@@ -95,6 +103,13 @@ class Song(song: MPDSong) {
   private var year = song.getYear()
 
   def this() = this(new MPDSong)
+
+  def safeToString(x: Any): String =
+    if (x != null) {
+      x.toString()
+    } else {
+      ""
+    }
 
   def getAlbum = album
   def setAlbum(newalbum: String) {
@@ -142,8 +157,3 @@ class Song(song: MPDSong) {
   }
 }
 
-//@XmlRootElement
-//class Album(album: String) extends MPDAlbum(album) {
-//
-//  def this() = this("")
-//}
