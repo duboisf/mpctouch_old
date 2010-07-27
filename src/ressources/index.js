@@ -12,7 +12,9 @@ Ext.ns( 'mpctouch' );
 Ext.ns( 'mpctouch.rest' );
 
 mpctouch.rest = {
-    player: '/mpctouch/ressources/player',
+    root: '/mpctouch/ressources',
+    player: '/player',
+    playlist: '/playlist',
     currentsong: '/song/current'
 };
 
@@ -31,13 +33,33 @@ mpctouch.main = function () {
         opts.params = opts.params || {};
 
         Ext.Ajax.request({
-                url: mpctouch.rest.player + opts.command,
+                url: mpctouch.rest.root + mpctouch.rest.player + opts.command,
                 method: method,
                 success: opts.callback.curry( true ),
                 failure: opts.callback.curry( false ),
                 params: opts.params
         });
     }
+
+//    var songsStore = new Ext.data.JsonStore({
+//        autoDestroy: true,
+//        proxy: {
+//            type: 'ajax',
+//            url: mpctouch.rest.root + '/playlist/song/list',
+//            reader: {
+//                type: 'json',
+//                root: 'songs',
+//                idProperty: 'title'
+//            }
+//        },
+//        fields: [
+//            'album',
+//            'artist',
+//            'title'
+//        ]
+//    });
+//
+//    songsStore.load( {} );
 
     var playerGetRequest = playerRequest.curry( 'GET' );
     var playerPutRequest = playerRequest.curry( 'PUT' );
