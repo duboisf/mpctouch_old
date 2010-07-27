@@ -66,38 +66,27 @@ class Playlist {
 
   private val playlist = Mpd.playlist
 
-  // Convert java.util.List to scala Seq
-//  implicit def javaList2Seq[T](javaList: java.util.List[T]) : BufferWrapper[T] = {
-//    new BufferWrapper[T]() { 
-//      def underlying = javaList
-//    }
-//  }
-
   @GET
   @Path("/song/list")
   @Produces(Array("application/json"))
-  //def doGetSongList = playlist.getSongList().map( new Song(_) )
-  def doGetSongList: java.util.List[Song] = {
-    val mpdsongs = playlist.getSongList()
-    val it = mpdsongs.iterator
-    val songs: java.util.List[Song] = new java.util.ArrayList()
-    while (it.hasNext) {
-      songs.add(new Song(it.next))  
-    }
-    return songs
-  }
+  def doGetSongList = new Songs(playlist.getSongList())
 }
 
 @XmlRootElement
 class Songs() {
-  private var songs: List[Song] = _
+
+  private var songs: java.util.List[Song] = new java.util.ArrayList()
 
   def this(mpdsongs: java.util.List[MPDSong]) {
     this()
-    songs = mpdsongs.map(new Song(_)).toList(5)
+    val it = mpdsongs.iterator
+    while (it.hasNext) {
+      songs.add(new Song(it.next))
+    }
   }
 
   def getSongs = songs
+  def setSongs(newsongs: java.util.List[Song]) = songs = newsongs
 }
 
 @XmlRootElement
@@ -168,5 +157,8 @@ class Song(song: MPDSong) {
   def setYear(newyear: String) {
     year = newyear
   }
+
+  override def toString = List(artist, title, album).reduceLeft(_ + " - " + _)
+
 }
 
