@@ -3,7 +3,8 @@ import org.bff.javampd._
 import org.bff.javampd.objects._
 import org.bff.javampd.exception._
 import javax.xml.bind.annotation._
-import collection.jcl.BufferWrapper
+import collection.JavaConversions._
+import collection.mutable._
  
 object Mpd {
 
@@ -66,11 +67,11 @@ class Playlist {
   private val playlist = Mpd.playlist
 
   // Convert java.util.List to scala Seq
-  implicit def javaList2Seq[T](javaList: java.util.List[T]) : BufferWrapper[T] = {
-    new BufferWrapper[T]() { 
-      def underlying = javaList
-    }
-  }
+//  implicit def javaList2Seq[T](javaList: java.util.List[T]) : BufferWrapper[T] = {
+//    new BufferWrapper[T]() { 
+//      def underlying = javaList
+//    }
+//  }
 
   @GET
   @Path("/song/list")
@@ -85,6 +86,18 @@ class Playlist {
     }
     return songs
   }
+}
+
+@XmlRootElement
+class Songs() {
+  private var songs: List[Song] = _
+
+  def this(mpdsongs: java.util.List[MPDSong]) {
+    this()
+    songs = mpdsongs.map(new Song(_)).toList(5)
+  }
+
+  def getSongs = songs
 }
 
 @XmlRootElement
@@ -104,7 +117,7 @@ class Song(song: MPDSong) {
 
   def this() = this(new MPDSong)
 
-  def safeToString(x: Any): String =
+  def safeToString(x: AnyRef): String =
     if (x != null) {
       x.toString()
     } else {
