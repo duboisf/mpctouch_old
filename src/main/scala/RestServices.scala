@@ -67,7 +67,7 @@ class Playlist {
   private val playlist = Mpd.playlist
 
   @GET
-  @Path("/song/list")
+  @Path("/songs")
   @Produces(Array("application/json"))
   def doGetSongList = new Songs(playlist.getSongList())
 }

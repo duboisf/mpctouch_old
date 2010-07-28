@@ -14,8 +14,7 @@ Ext.ns( 'mpctouch.rest' );
 mpctouch.rest = {
     root: '/mpctouch/ressources',
     player: '/player',
-    playlist: '/playlist',
-    currentsong: '/song/current'
+    playlist: '/playlist'
 };
 
 mpctouch.main = function () {
@@ -41,25 +40,33 @@ mpctouch.main = function () {
         });
     }
 
-//    var songsStore = new Ext.data.JsonStore({
-//        autoDestroy: true,
-//        proxy: {
-//            type: 'ajax',
-//            url: mpctouch.rest.root + '/playlist/song/list',
-//            reader: {
-//                type: 'json',
-//                root: 'songs',
-//                idProperty: 'title'
-//            }
-//        },
-//        fields: [
-//            'album',
-//            'artist',
-//            'title'
-//        ]
-//    });
-//
-//    songsStore.load( {} );
+    Ext.regModel('Song', {
+        fields: [
+            { name: 'title', type: 'string' },
+            { name: 'artist',  type: 'string' },
+            { name: 'album',  type: 'string' }
+        ]
+    });
+
+    var songsStore = new Ext.data.JsonStore({
+        model: 'Song',
+        autoDestroy: true,
+        sorters: 'title',
+        getGroupString : function( record ) {
+            return record.get('artist');
+        },
+        proxy: {
+            type: 'ajax',
+            url: mpctouch.rest.root + '/playlist/songs',
+            reader: {
+                type: 'json',
+                root: 'songs',
+                idProperty: 'title'
+            }
+        }
+    });
+
+    songsStore.load( {} );
 
     var playerGetRequest = playerRequest.curry( 'GET' );
     var playerPutRequest = playerRequest.curry( 'PUT' );
@@ -70,7 +77,31 @@ mpctouch.main = function () {
 
     currentSongPanel.update( 'Test' );
 
-    var playlistPanel = new Ext.Panel( {} );
+    var playlistPanel = new Ext.Panel({
+        layout: Ext.platform.isPhone ? 'fit' : {
+            type: 'vbox',
+            align: 'center',
+            pack: 'center'
+        },
+        cls: 'demo-list',
+        items: [{
+            width: 300,
+            height: 500,
+            xtype: 'list',
+            disclosure: {
+                scope: songsStore,
+                handler: function(record, btn, index) {
+                    alert('Disclose more info for ' + record.get('title'));
+                }
+            },
+            store: songsStore,
+            tpl: '<tpl for="."><div class="song"><strong>{title}</strong><br>&nbsp;&nbsp;{album}</div></tpl>',
+            itemSelector: 'div.song',
+            singleSelect: true,
+            grouped: true,
+            indexBar: true
+        }]
+    });
 
     var carousel = new Ext.Carousel({
         flex: 1,
