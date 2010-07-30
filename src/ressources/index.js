@@ -51,9 +51,8 @@ mpctouch.main = function () {
     var songsStore = new Ext.data.JsonStore({
         model: 'Song',
         autoDestroy: true,
-        sorters: 'title',
-        getGroupString : function( record ) {
-            return record.get('artist');
+        getGroupString : function( rec ) {
+            return rec.get( 'artist' ) + ' - ' + rec.get( 'album' );
         },
         proxy: {
             type: 'ajax',
@@ -83,7 +82,7 @@ mpctouch.main = function () {
             align: 'center',
             pack: 'center'
         },
-        cls: 'demo-list',
+//        cls: 'demo-list',
         items: [{
             width: 300,
             height: 500,
@@ -91,28 +90,24 @@ mpctouch.main = function () {
             disclosure: {
                 scope: songsStore,
                 handler: function(record, btn, index) {
-                    alert('Disclose more info for ' + record.get('title'));
+                    alert('Play ' + record.get('title'));
                 }
             },
             store: songsStore,
-            tpl: '<tpl for="."><div class="song"><strong>{title}</strong><br>&nbsp;&nbsp;{album}</div></tpl>',
+            tpl: '<tpl for="."><div class="song">{title}</div></tpl>',
             itemSelector: 'div.song',
             singleSelect: true,
-            grouped: true,
-            indexBar: true
+            grouped: true
         }]
     });
 
     var carousel = new Ext.Carousel({
         flex: 1,
-        animation: 'cube',
+//        animation: 'cube',
         items: [
             currentSongPanel,
-            playlistPanel,
-        {
-          title: 'Tab 3',
-          html: '3'
-        }]
+            playlistPanel
+        ]
     });
 
     carousel.updateContent = function () {

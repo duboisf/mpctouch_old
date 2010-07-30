@@ -10,7 +10,7 @@ object Mpd {
 
     private val mpd = new MPD("localhost", 6600)
     val player = mpd.getMPDPlayer()
-    val playlist = mpd.getMPDPlaylist()
+    def playlist = new MPD("localhost", 6600).getMPDPlaylist()
 }
 
 @Path("/player")
@@ -64,7 +64,7 @@ class Player {
 @Path("/playlist")
 class Playlist {
 
-  private val playlist = Mpd.playlist
+  private def playlist = Mpd.playlist
 
   @GET
   @Path("/songs")
