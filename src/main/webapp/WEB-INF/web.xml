@@ -6,8 +6,10 @@
    <display-name>Sencha music player client</display-name>
    <servlet>
       <servlet-name>ServletAdaptor</servlet-name>
-      <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-      <load-on-startup>1</load-on-startup>
+      <!--<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>-->
+      <servlet-class>org.atmosphere.cpr.AtmosphereServlet</servlet-class>
+      <async-supported>true</async-supported>
+      <load-on-startup>0</load-on-startup>
    </servlet>
    <servlet-mapping>
       <servlet-name>ServletAdaptor</servlet-name>

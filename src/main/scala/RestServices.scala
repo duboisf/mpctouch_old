@@ -1,14 +1,18 @@
+package org.reliant.mpctouch
+
 import javax.ws.rs._
 import org.bff.javampd._
 import org.bff.javampd.objects._
 import org.bff.javampd.exception._
 import javax.xml.bind.annotation._
+import com.sun.jersey.spi.resource.Singleton
 import collection.JavaConversions._
 import collection.mutable._
+import org.atmosphere.annotation.Suspend
  
 object Mpd {
 
-    private val mpd = new MPD("localhost", 6600)
+    var mpd = new MPD("localhost", 6600)
     val player = mpd.getMPDPlayer()
     def playlist = new MPD("localhost", 6600).getMPDPlaylist()
 }
@@ -70,6 +74,16 @@ class Playlist {
   @Path("/songs")
   @Produces(Array("application/json"))
   def doGetSongList = new Songs(playlist.getSongList())
+}
+
+@Path("/comet")
+@Singleton
+class Comet {
+
+  @GET
+  @Suspend
+  def suspend = ""
+
 }
 
 @XmlRootElement
