@@ -8,16 +8,17 @@ import collection.mutable._
  
 object Mpd {
 
-    private val mpd = new MPD("localhost", 6600)
-    val player = mpd.getMPDPlayer()
-    def playlist = new MPD("localhost", 6600).getMPDPlaylist()
+  var mpd = new MPD("localhost", 6600)
+  def player = mpd.getMPDPlayer()
+  def playlist = mpd.getMPDPlaylist()
+  val success: String = "{\"success\":true}"
 }
 
 @Path("/player")
 class Player {
 
-  private val player = Mpd.player
-  private val success: String = "{\"success\":true}"
+  private def player = Mpd.player
+  private val success = Mpd.success
 
   @PUT
   @Path("/command/{command}")
@@ -65,11 +66,25 @@ class Player {
 class Playlist {
 
   private def playlist = Mpd.playlist
+  private val success = Mpd.success
+  private def player = Mpd.player
 
   @GET
   @Path("/songs")
   @Produces(Array("application/json"))
   def doGetSongList = new Songs(playlist.getSongList())
+
+  @PUT
+  @Path("/play")
+  @Produces(Array("application/json"))
+  def playIndex(@FormParam("index") index: Int): String = {
+    val songs = playlist.getSongList()
+    if (index >= songs.size) {
+      throw new WebApplicationException(404)
+    }
+    player.playId(songs.get(index))
+    return success
+  }
 }
 
 @XmlRootElement

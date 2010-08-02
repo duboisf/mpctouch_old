@@ -19,11 +19,11 @@ mpctouch.rest = {
 
 mpctouch.main = function () {
 
-    function playerRequest ( method, opts ) {
+    function mpcRequest ( urlprefix, method, opts ) {
 
         opts.callback = opts.callback || function ( success, resp ) {
             if ( !success ) {
-                Ext.Msg.alert( 'Command failure', 'Command ' + opts.command + ' failed' );
+                alert( 'Command ' + opts.command + ' failed' );
             }
         }
         
@@ -32,7 +32,7 @@ mpctouch.main = function () {
         opts.params = opts.params || {};
 
         Ext.Ajax.request({
-                url: mpctouch.rest.root + mpctouch.rest.player + opts.command,
+                url: mpctouch.rest.root + urlprefix + opts.command,
                 method: method,
                 success: opts.callback.curry( true ),
                 failure: opts.callback.curry( false ),
@@ -40,8 +40,21 @@ mpctouch.main = function () {
         });
     }
 
+    var playerRequest = mpcRequest.curry( mpctouch.rest.player );
+    var playerGetRequest = playerRequest.curry( 'GET' );
+    var playerPutRequest = playerRequest.curry( 'PUT' );
+    var playerPostRequest = playerRequest.curry( 'POST' );
+    var playerDeleteRequest = playerRequest.curry( 'DELETE' );
+
+    var playlistRequest = mpcRequest.curry( mpctouch.rest.playlist );
+    var playlistGetRequest = playlistRequest.curry( 'GET' );
+    var playlistPutRequest = playlistRequest.curry( 'PUT' );
+    var playlistPostRequest = playlistRequest.curry( 'POST' );
+    var playlistDeleteRequest = playlistRequest.curry( 'DELETE' );
+
     Ext.regModel('Song', {
         fields: [
+            { name: 'position', type: 'int' },
             { name: 'title', type: 'string' },
             { name: 'artist',  type: 'string' },
             { name: 'album',  type: 'string' }
@@ -67,11 +80,6 @@ mpctouch.main = function () {
 
     songsStore.load( {} );
 
-    var playerGetRequest = playerRequest.curry( 'GET' );
-    var playerPutRequest = playerRequest.curry( 'PUT' );
-    var playerPostRequest = playerRequest.curry( 'POST' );
-    var playerDeleteRequest = playerRequest.curry( 'DELETE' );
-
     var currentSongPanel = new Ext.Panel( {} );
 
     currentSongPanel.update( 'Test' );
@@ -90,7 +98,10 @@ mpctouch.main = function () {
             disclosure: {
                 scope: songsStore,
                 handler: function(record, btn, index) {
-                    alert('Play ' + record.get('title'));
+                    playlistPutRequest({
+                        command: '/play',
+                        params: { index: index }
+                    });
                 }
             },
             store: songsStore,
