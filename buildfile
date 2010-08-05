@@ -15,7 +15,7 @@ repositories.remote << "http://download.java.net/maven/2"
 
 ASM = 'asm:asm:jar:3.1'
 
-JSR311_API = 'javax.ws.rs:jsr311-api:jar:1.0'
+JSR311_API = 'javax.ws.rs:jsr311-api:jar:1.1.1'
 
 SERVLET = 'javax.servlet:servlet-api:jar:2.5'
 
@@ -30,10 +30,10 @@ ATMOSPHERE_JERSEY = "org.atmosphere:atmosphere-jersey:jar:#{ATMOSPHERE_VERSION}"
 ATMOSPHERE_TOMCAT = "org.atmosphere:atmosphere-compat-tomcat:jar:#{ATMOSPHERE_VERSION}"
 ATMOSPHERE_JBOSS = "org.atmosphere:atmosphere-compat-jbossweb:jar:#{ATMOSPHERE_VERSION}"
 ATMOSPHERE_WEBLOGIC = "org.atmosphere:atmosphere-compat-weblogic:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_JGROUPS = "org.atmosphere:atmosphere-jgroups:jar:#{ATMOSPHERE_VERSION}"
+#ATMOSPHERE_JGROUPS = "org.atmosphere:atmosphere-jgroups:jar:#{ATMOSPHERE_VERSION}"
 ATMOSPHERE_RUNTIME = "org.atmosphere:atmosphere-runtime:jar:#{ATMOSPHERE_VERSION}"
 ATMOSPHERE_ANNOTATIONS = "org.atmosphere:atmosphere-annotations:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE = [ATMOSPHERE_JERSEY, ATMOSPHERE_TOMCAT, ATMOSPHERE_JBOSS, ATMOSPHERE_WEBLOGIC, ATMOSPHERE_JGROUPS, ATMOSPHERE_RUNTIME, ATMOSPHERE_ANNOTATIONS]
+ATMOSPHERE = [ATMOSPHERE_JERSEY, ATMOSPHERE_TOMCAT, ATMOSPHERE_JBOSS, ATMOSPHERE_WEBLOGIC, ATMOSPHERE_RUNTIME, ATMOSPHERE_ANNOTATIONS]
 
 # Fetch java mpd (not in the maven repositories)
 JAVA_MPD_VERSION = '3.3'

@@ -8,7 +8,7 @@ import javax.xml.bind.annotation._
 import com.sun.jersey.spi.resource.Singleton
 import collection.JavaConversions._
 import collection.mutable._
-import org.atmosphere.annotation.Suspend
+import org.atmosphere.annotation._
  
 object Mpd {
 
@@ -76,14 +76,22 @@ class Playlist {
   def doGetSongList = new Songs(playlist.getSongList())
 }
 
+// Comet test
 @Path("/comet")
 @Singleton
 class Comet {
 
+  @Path("/suspend")
   @GET
   @Suspend
+  @Produces(Array("text/html"))
   def suspend = ""
 
+  @Path("/resume")
+  @GET
+  @Broadcast
+  @Produces(Array("text/html"))
+  def resume: String = "<h1>COMET!</h1>"
 }
 
 @XmlRootElement
