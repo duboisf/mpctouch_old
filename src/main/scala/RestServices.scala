@@ -1,15 +1,14 @@
 package org.reliant.mpctouch
 
-import javax.ws.rs._
-import org.bff.javampd._
-import org.bff.javampd.objects._
+import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationException}
+import org.bff.javampd.MPD
+import org.bff.javampd.objects.MPDSong
 import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
 import org.bff.javampd.exception._
-import javax.xml.bind.annotation._
+import javax.xml.bind.annotation.XmlRootElement
 import com.sun.jersey.spi.resource.Singleton
-import collection.JavaConversions._
-import collection.mutable._
-import org.atmosphere.annotation._
+import org.atmosphere.annotation.{Suspend,Broadcast}
+import org.atmosphere.cpr.Meteor
  
 object Mpd extends PlayerChangeListener {
 
@@ -43,6 +42,7 @@ class Player {
 
   @PUT
   @Path("/command/{command}")
+  @Broadcast
   @Produces(Array("application/json"))
   def doPutCommand(@PathParam("command") command: String): String = {
     command match {
@@ -114,9 +114,9 @@ class Playlist {
 class Comet {
 
   @Path("/suspend")
+  @Suspend(resumeOnBroadcast = true)
   @GET
-  @Suspend
-  @Produces(Array("text/html"))
+  @Produces(Array("application/json"))
   def suspend = ""
 
   @Path("/resume")

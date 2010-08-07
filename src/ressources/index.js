@@ -12,7 +12,7 @@ Ext.ns( 'mpctouch' );
 Ext.ns( 'mpctouch.rest' );
 
 mpctouch.rest = {
-    root: '/mpctouch/ressources',
+    root: '/mpctouch/atmosphere',
     player: '/player',
     playlist: '/playlist'
 };
