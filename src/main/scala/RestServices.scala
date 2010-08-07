@@ -3,6 +3,7 @@ package org.reliant.mpctouch
 import javax.ws.rs._
 import org.bff.javampd._
 import org.bff.javampd.objects._
+import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
 import org.bff.javampd.exception._
 import javax.xml.bind.annotation._
 import com.sun.jersey.spi.resource.Singleton
@@ -10,12 +11,28 @@ import collection.JavaConversions._
 import collection.mutable._
 import org.atmosphere.annotation._
  
-object Mpd {
+object Mpd extends PlayerChangeListener {
 
-  var mpd = new MPD("localhost", 6600)
+  {
+    println("Hello?")
+    mpd = new MPD("localhost", 6600)
+    player.addPlayerChangeListener(this)
+  }
+
+  var mpd: MPD = _
   def player = mpd.getMPDPlayer()
   def playlist = mpd.getMPDPlaylist()
   val success: String = "{\"success\":true}"
+
+  override def playerChanged(event: PlayerChangeEvent) = {
+    print("player change event: ")
+    val msg = event.getId() match {
+      case PlayerChangeEvent.PLAYER_NEXT => "next song"
+      case PlayerChangeEvent.PLAYER_PREVIOUS => "prev song"
+      case _ => "case not dealt with"
+    }
+    println(msg)
+  }
 }
 
 @Path("/player")
