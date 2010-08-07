@@ -1,4 +1,11 @@
-Function.prototype.curry = function () {
+Function.prototype.method = function ( name, func ) {
+    if ( !this.prototype[name] ) {
+        this.prototype[name] = func;
+    }
+    return this;
+};
+
+Function.method( 'curry', function () {
     var slice = Array.prototype.slice,
         args = slice.apply(arguments),
         that = this;
@@ -6,21 +13,18 @@ Function.prototype.curry = function () {
     return function () {
         return that.apply( null, args.concat( slice.apply( arguments ) ) );
     }
-}
+});
 
 Ext.ns( 'mpctouch' );
 Ext.ns( 'mpctouch.rest' );
 
 mpctouch.rest = {
     root: '/mpctouch/atmosphere',
-    player: '/player',
-    playlist: '/playlist'
 };
 
 mpctouch.main = function () {
 
     function mpcRequest ( urlprefix, method, opts ) {
-
         opts.callback = opts.callback || function ( success, resp ) {
             if ( !success ) {
                 alert( 'Command ' + opts.command + ' failed' );
@@ -28,8 +32,8 @@ mpctouch.main = function () {
         }
         
         method = method || 'PUT';
-
         opts.params = opts.params || {};
+        opts.command = opts.command || '';
 
         Ext.Ajax.request({
                 url: mpctouch.rest.root + urlprefix + opts.command,
@@ -40,19 +44,21 @@ mpctouch.main = function () {
         });
     }
 
-    var playerRequest = mpcRequest.curry( mpctouch.rest.player );
+    var playerRequest = mpcRequest.curry( '/player' );
     var playerGetRequest = playerRequest.curry( 'GET' );
     var playerPutRequest = playerRequest.curry( 'PUT' );
     var playerPostRequest = playerRequest.curry( 'POST' );
     var playerDeleteRequest = playerRequest.curry( 'DELETE' );
 
-    var playlistRequest = mpcRequest.curry( mpctouch.rest.playlist );
+    var playlistRequest = mpcRequest.curry( '/playlist' );
     var playlistGetRequest = playlistRequest.curry( 'GET' );
     var playlistPutRequest = playlistRequest.curry( 'PUT' );
     var playlistPostRequest = playlistRequest.curry( 'POST' );
     var playlistDeleteRequest = playlistRequest.curry( 'DELETE' );
 
-    Ext.regModel('Song', {
+    var cometSuspend = mpcRequest.curry( '/comet/suspend', 'GET' );
+
+    Ext.regModel( 'Song', {
         fields: [
             { name: 'position', type: 'int' },
             { name: 'title', type: 'string' },
@@ -90,14 +96,13 @@ mpctouch.main = function () {
             align: 'center',
             pack: 'center'
         },
-//        cls: 'demo-list',
         items: [{
             width: 300,
             height: 500,
             xtype: 'list',
             disclosure: {
                 scope: songsStore,
-                handler: function(record, btn, index) {
+                handler: function( record, btn, index ) {
                     playlistPutRequest({
                         command: '/play',
                         params: { index: index }
@@ -122,8 +127,7 @@ mpctouch.main = function () {
     });
 
     carousel.updateContent = function () {
-        playerGetRequest({
-            command: '/song/current',
+        cometSuspend({
             callback: function ( success, resp ) {
                 if ( success ) {
                     var song = Ext.decode( resp.responseText );
@@ -134,6 +138,7 @@ mpctouch.main = function () {
                         }
                     }
                     currentSongPanel.update( html.join( '<br>' ) );
+                    carousel.updateContent();
                 }
             }
         });
@@ -173,10 +178,7 @@ mpctouch.main = function () {
             },
             items: [{
                 text: 'prev',
-                handler: playerPutRequest.curry({
-                    command: '/command/prev',
-                    callback: carousel.updateContent
-                })
+                handler: playerPutRequest.curry({ command: '/command/prev', })
             }, {
                 text: 'stop',
                 handler: playerPutRequest.curry( { command: '/command/stop' } )
@@ -185,10 +187,7 @@ mpctouch.main = function () {
                 handler: playerPutRequest.curry( { command: '/command/play' } )
             }, {
                 text: 'next',
-                handler: playerPutRequest.curry({
-                    command: '/command/next',
-                    callback: carousel.updateContent
-                })
+                handler: playerPutRequest.curry({ command: '/command/next' })
             }]
         }, slider
         ]

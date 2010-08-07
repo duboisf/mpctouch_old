@@ -4,10 +4,10 @@ import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationExce
 import org.bff.javampd.MPD
 import org.bff.javampd.objects.MPDSong
 import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
-import org.bff.javampd.exception._
 import javax.xml.bind.annotation.XmlRootElement
 import com.sun.jersey.spi.resource.Singleton
 import org.atmosphere.annotation.{Suspend,Broadcast}
+import org.atmosphere.annotation.Suspend.SCOPE
 import org.atmosphere.cpr.Meteor
  
 object Mpd extends PlayerChangeListener {
@@ -44,7 +44,7 @@ class Player {
   @Path("/command/{command}")
   @Broadcast
   @Produces(Array("application/json"))
-  def doPutCommand(@PathParam("command") command: String): String = {
+  def execCommand(@PathParam("command") command: String): Song = {
     command match {
       case "play" => player.play()
       case "stop" => player.stop()
@@ -52,7 +52,7 @@ class Player {
       case "prev" => player.playPrev()
       case _ => throw new WebApplicationException(400)
     }
-    return success
+    return currentSong()
   }
 
   @PUT
@@ -74,7 +74,7 @@ class Player {
   @GET
   @Path("/song/current")
   @Produces(Array("application/json"))
-  def doGet(): Song = {
+  def currentSong(): Song = {
     if (player.getCurrentSong != null) {
       new Song(player.getCurrentSong())
     } else {
@@ -108,22 +108,15 @@ class Playlist {
   }
 }
 
-// Comet test
 @Path("/comet")
 @Singleton
 class Comet {
 
   @Path("/suspend")
-  @Suspend(resumeOnBroadcast = true)
+  @Suspend(resumeOnBroadcast = true, scope = SCOPE.VM)
   @GET
   @Produces(Array("application/json"))
   def suspend = ""
-
-  @Path("/resume")
-  @GET
-  @Broadcast
-  @Produces(Array("text/html"))
-  def resume: String = "<h1>COMET!</h1>"
 }
 
 @XmlRootElement
