@@ -1,19 +1,18 @@
 package org.reliant.mpctouch
 
+import com.sun.jersey.spi.resource.Singleton
 import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationException}
+import javax.xml.bind.annotation.XmlRootElement
+import org.atmosphere.annotation.{Suspend,Broadcast,Resume}
+import org.atmosphere.cpr.{BroadcasterFactory,Broadcaster}
+import org.atmosphere.jersey.JerseyBroadcaster
+import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
 import org.bff.javampd.MPD
 import org.bff.javampd.objects.MPDSong
-import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
-import javax.xml.bind.annotation.XmlRootElement
-import com.sun.jersey.spi.resource.Singleton
-import org.atmosphere.annotation.{Suspend,Broadcast}
-import org.atmosphere.annotation.Suspend.SCOPE
-import org.atmosphere.cpr.Meteor
  
 object Mpd extends PlayerChangeListener {
 
   {
-    println("Hello?")
     mpd = new MPD("localhost", 6600)
     player.addPlayerChangeListener(this)
   }
@@ -34,42 +33,87 @@ object Mpd extends PlayerChangeListener {
   }
 }
 
+@XmlRootElement
+case class Event[T >: Null <: AnyRef](event: String, data: T) {
+
+  private var _success = true
+  private var _event = event
+  private var _data = data
+
+  def this() = this("", null)
+
+  def getSuccess = _success
+  def setSuccess(value: Boolean) {
+    _success = value
+  }
+
+  def getEvent = _event
+  def setEvent(name: String) {
+    _event = name
+  }
+
+  def getData = _data
+  def setData(data: T) {
+    _data = data
+  }
+}
+
 @Path("/player")
 class Player {
 
   private def player = Mpd.player
   private val success = Mpd.success
+  private def playlist = Mpd.playlist
+
+  @GET
+  @Produces(Array("application/json"))
+  def suspend: String = ""
 
   @PUT
   @Path("/command/{command}")
-  @Broadcast
+  @Broadcast(resumeOnBroadcast = true)
   @Produces(Array("application/json"))
-  def execCommand(@PathParam("command") command: String): Song = {
+  def execCommand(@PathParam("command") command: String): Event[Song] = {
     command match {
-      case "play" => player.play()
-      case "stop" => player.stop()
-      case "next" => player.playNext()
-      case "prev" => player.playPrev()
+      case "play" => {
+        player.play()
+        Event("play", currentSong)
+      }
+      case "stop" => {
+        player.stop()
+        Event("stop", null)
+      }
+      case "next" => {
+        player.playNext()
+        Event("next", currentSong)
+      }
+      case "prev" => {
+        player.playPrev()
+        Event("prev", currentSong)
+      }
       case _ => throw new WebApplicationException(400)
     }
-    return currentSong()
   }
 
   @PUT
   @Path("/volume/{value: [0-9]{0,3}}")
+  @Broadcast
   @Produces(Array("application/json"))
-  def doPutVolume(@PathParam("value") value: Int): String = {
+  def doPutVolume(@PathParam("value") value: Int): Event[String] = {
     if (value > 100) {
       throw new WebApplicationException(400)
     }
     player.setVolume(value)
-    return success
+    return currentVolume
   }
 
   @GET
   @Path("/volume")
   @Produces(Array("application/json"))
-  def doGetVolume() = "{\"success\":true,\"volume\":" + player.getVolume() + "}"
+  def currentVolume(): Event[String] = {
+    val volume: Int = player.getVolume()
+    return Event("volume", volume.toString())
+  }
 
   @GET
   @Path("/song/current")
@@ -81,42 +125,24 @@ class Player {
       throw new WebApplicationException(404)
     }
   }
-}
-
-@Path("/playlist")
-class Playlist {
-
-  private def playlist = Mpd.playlist
-  private val success = Mpd.success
-  private def player = Mpd.player
 
   @GET
-  @Path("/songs")
+  @Path("/playlist/songs")
   @Produces(Array("application/json"))
-  def doGetSongList = new Songs(playlist.getSongList())
+  def getSongList = new Songs(playlist.getSongList())
 
   @PUT
-  @Path("/play")
+  @Path("/playlist/play")
+  @Broadcast
   @Produces(Array("application/json"))
-  def playIndex(@FormParam("index") index: Int): String = {
+  def playIndex(@FormParam("index") index: Int): Song = {
     val songs = playlist.getSongList()
     if (index >= songs.size) {
       throw new WebApplicationException(404)
     }
     player.playId(songs.get(index))
-    return success
+    return currentSong
   }
-}
-
-@Path("/comet")
-@Singleton
-class Comet {
-
-  @Path("/suspend")
-  @Suspend(resumeOnBroadcast = true, scope = SCOPE.VM)
-  @GET
-  @Produces(Array("application/json"))
-  def suspend = ""
 }
 
 @XmlRootElement

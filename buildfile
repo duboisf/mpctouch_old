@@ -26,14 +26,7 @@ JERSEY_JSON = "com.sun.jersey:jersey-json:jar:#{JERSEY_VERSION}"
 JERSEY = [JERSEY_CORE_SERVER, JERSEY_CORE, JERSEY_JSON, JSR311_API, ASM]
 
 ATMOSPHERE_VERSION = '0.6.1'
-ATMOSPHERE_JERSEY = "org.atmosphere:atmosphere-jersey:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_TOMCAT = "org.atmosphere:atmosphere-compat-tomcat:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_JBOSS = "org.atmosphere:atmosphere-compat-jbossweb:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_WEBLOGIC = "org.atmosphere:atmosphere-compat-weblogic:jar:#{ATMOSPHERE_VERSION}"
-#ATMOSPHERE_JGROUPS = "org.atmosphere:atmosphere-jgroups:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_RUNTIME = "org.atmosphere:atmosphere-runtime:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE_ANNOTATIONS = "org.atmosphere:atmosphere-annotations:jar:#{ATMOSPHERE_VERSION}"
-ATMOSPHERE = [ATMOSPHERE_JERSEY, ATMOSPHERE_TOMCAT, ATMOSPHERE_JBOSS, ATMOSPHERE_WEBLOGIC, ATMOSPHERE_RUNTIME, ATMOSPHERE_ANNOTATIONS]
+ATMOSPHERE_JERSEY = transitive("org.atmosphere:atmosphere-jersey:jar:#{ATMOSPHERE_VERSION}")
 
 # Fetch java mpd (not in the maven repositories)
 JAVA_MPD_VERSION = '3.3'
@@ -48,7 +41,7 @@ define "mpctouch" do
     project.version = VERSION_NUMBER
     project.group = GROUP
     manifest["Implementation-Vendor"] = COPYRIGHT
-    compile.with SERVLET, JERSEY, ATMOSPHERE, JAVA_MPD
+    compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD
     compile.using :deprecation => true, :debug => false, :optimise => true
 
     package(:war).libs -= artifacts(SERVLET)

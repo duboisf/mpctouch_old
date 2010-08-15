@@ -22,7 +22,21 @@ mpctouch.rest = {
     root: '/mpctouch/atmosphere',
 };
 
+mpctouch.events = {
+    player: {
+        next: 'mpctouch.events.player.next',
+        prev: 'mpctouch.events.player.prev',
+        stop: 'mpctouch.events.player.stop',
+        play: 'mpctouch.events.player.play'
+    },
+    playlist: {
+        songs: 'mpctouch.events.playlist.songs'
+    }
+};
+
 mpctouch.main = function () {
+
+    Ext.Ajax.timeout = 900000;
 
     function mpcRequest ( urlprefix, method, opts ) {
         opts.callback = opts.callback || function ( success, resp ) {
@@ -50,13 +64,13 @@ mpctouch.main = function () {
     var playerPostRequest = playerRequest.curry( 'POST' );
     var playerDeleteRequest = playerRequest.curry( 'DELETE' );
 
-    var playlistRequest = mpcRequest.curry( '/playlist' );
+    var playlistRequest = mpcRequest.curry( '/player/playlist' );
     var playlistGetRequest = playlistRequest.curry( 'GET' );
     var playlistPutRequest = playlistRequest.curry( 'PUT' );
     var playlistPostRequest = playlistRequest.curry( 'POST' );
     var playlistDeleteRequest = playlistRequest.curry( 'DELETE' );
 
-    var cometSuspend = mpcRequest.curry( '/comet/suspend', 'GET' );
+    var cometSuspend = mpcRequest.curry( '/player', 'GET' );
 
     Ext.regModel( 'Song', {
         fields: [
@@ -75,11 +89,11 @@ mpctouch.main = function () {
         },
         proxy: {
             type: 'ajax',
-            url: mpctouch.rest.root + '/playlist/songs',
+            url: mpctouch.rest.root + '/player/playlist/songs',
             reader: {
                 type: 'json',
                 root: 'songs',
-                idProperty: 'title'
+                idProperty: 'position'
             }
         }
     });
@@ -113,7 +127,7 @@ mpctouch.main = function () {
             tpl: '<tpl for="."><div class="song">{title}</div></tpl>',
             itemSelector: 'div.song',
             singleSelect: true,
-            grouped: true
+            grouped: false
         }]
     });
 
