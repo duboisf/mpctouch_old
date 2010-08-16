@@ -2,14 +2,14 @@ package org.reliant.mpctouch
 
 import com.sun.jersey.spi.resource.Singleton
 import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationException}
-import javax.xml.bind.annotation.XmlRootElement
 import org.atmosphere.annotation.{Suspend,Broadcast,Resume}
 import org.atmosphere.cpr.{BroadcasterFactory,Broadcaster}
 import org.atmosphere.jersey.JerseyBroadcaster
 import org.bff.javampd.events.{PlayerChangeListener,PlayerChangeEvent}
 import org.bff.javampd.MPD
 import org.bff.javampd.objects.MPDSong
- 
+import javax.xml.bind.annotation.{XmlSeeAlso, XmlRootElement}
+
 object Mpd extends PlayerChangeListener {
 
   {
@@ -34,18 +34,13 @@ object Mpd extends PlayerChangeListener {
 }
 
 @XmlRootElement
-case class Event[T >: Null <: AnyRef](event: String, data: T) {
+@XmlSeeAlso(Array(classOf[Song]))
+class Event[T >: Null <: AnyRef](event: String, data: T) {
 
-  private var _success = true
   private var _event = event
   private var _data = data
 
   def this() = this("", null)
-
-  def getSuccess = _success
-  def setSuccess(value: Boolean) {
-    _success = value
-  }
 
   def getEvent = _event
   def setEvent(name: String) {
@@ -66,8 +61,9 @@ class Player {
   private def playlist = Mpd.playlist
 
   @GET
+  @Suspend(resumeOnBroadcast = true, scope = Suspend.SCOPE.VM )
   @Produces(Array("application/json"))
-  def suspend: String = ""
+  def suspend: Event[AnyRef] = null
 
   @PUT
   @Path("/command/{command}")
@@ -77,19 +73,19 @@ class Player {
     command match {
       case "play" => {
         player.play()
-        Event("play", currentSong)
+        new Event("play", currentSong)
       }
       case "stop" => {
         player.stop()
-        Event("stop", null)
+        new Event("stop", null)
       }
       case "next" => {
         player.playNext()
-        Event("next", currentSong)
+        new Event("next", currentSong)
       }
       case "prev" => {
         player.playPrev()
-        Event("prev", currentSong)
+        new Event("prev", currentSong)
       }
       case _ => throw new WebApplicationException(400)
     }
@@ -112,7 +108,7 @@ class Player {
   @Produces(Array("application/json"))
   def currentVolume(): Event[String] = {
     val volume: Int = player.getVolume()
-    return Event("volume", volume.toString())
+    return new Event("volume", volume.toString())
   }
 
   @GET

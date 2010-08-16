@@ -1,3 +1,6 @@
+"use strict";
+/*global Ext, mpctouch */
+
 Function.prototype.method = function ( name, func ) {
     if ( !this.prototype[name] ) {
         this.prototype[name] = func;
@@ -12,14 +15,22 @@ Function.method( 'curry', function () {
 
     return function () {
         return that.apply( null, args.concat( slice.apply( arguments ) ) );
+    };
+});
+
+String.method( 'startsWith', function (str) {
+    var match = this.match( '^' + str );
+    if ( match ) {
+        return match[0] === str;
     }
+    return false;
 });
 
 Ext.ns( 'mpctouch' );
 Ext.ns( 'mpctouch.rest' );
 
 mpctouch.rest = {
-    root: '/mpctouch/atmosphere',
+    root: '/mpctouch/atmosphere'
 };
 
 mpctouch.events = {
@@ -43,7 +54,7 @@ mpctouch.main = function () {
             if ( !success ) {
                 alert( 'Command ' + opts.command + ' failed' );
             }
-        }
+        };
         
         method = method || 'PUT';
         opts.params = opts.params || {};
@@ -98,7 +109,7 @@ mpctouch.main = function () {
         }
     });
 
-    songsStore.load( {} );
+//    songsStore.load( {} );
 
     var currentSongPanel = new Ext.Panel( {} );
 
@@ -140,25 +151,53 @@ mpctouch.main = function () {
         ]
     });
 
-    carousel.updateContent = function () {
+    var slider = new Ext.form.Slider({});
+
+    function eventDispatcher () {
+
+        function updateCurrentSongPanel ( song ) {
+            var html = [];
+            for ( var prop in song ) {
+                if ( !( song[prop] instanceof Function ) && !prop.startsWith( '@' ) ) {
+                    html.push( prop + ': ' + song[prop] );
+                }
+            }
+            currentSongPanel.update( html.join( '<br>' ) );
+        }
+
+        return {
+            prev: function ( song ) {
+                updateCurrentSongPanel( song );
+            },
+            play: function ( song ) {
+                updateCurrentSongPanel( song );
+            },
+            next: function ( song ) {
+                updateCurrentSongPanel( song );
+            },
+            stop: function () {
+                currentSongPanel.update( 'Stopped' );
+            }
+        };
+    }
+
+    var dispatcher = eventDispatcher();
+
+    function cometLoop() {
         cometSuspend({
             callback: function ( success, resp ) {
                 if ( success ) {
-                    var song = Ext.decode( resp.responseText );
-                    var html = [];
-                    for ( var prop in song ) {
-                        if ( !( song[prop] instanceof Function ) ) {
-                            html.push( prop + ': ' + song[prop] );
-                        }
+                    var respText = Ext.decode( resp.responseText );
+                    if ( dispatcher[respText.event] instanceof Function ) {
+                        dispatcher[respText.event]( respText.data );
                     }
-                    currentSongPanel.update( html.join( '<br>' ) );
-                    carousel.updateContent();
                 }
+                cometLoop();
             }
         });
-    };
+    }
 
-    var slider = new Ext.form.Slider({});
+    cometLoop();
 
     // Fetch initial volume value to setup slide, then add change listener
     playerGetRequest({
@@ -173,8 +212,6 @@ mpctouch.main = function () {
             }
         }
     });
-
-    carousel.updateContent();
 
     var controls = new Ext.Panel({
         layout: {
@@ -192,7 +229,7 @@ mpctouch.main = function () {
             },
             items: [{
                 text: 'prev',
-                handler: playerPutRequest.curry({ command: '/command/prev', })
+                handler: playerPutRequest.curry({ command: '/command/prev' })
             }, {
                 text: 'stop',
                 handler: playerPutRequest.curry( { command: '/command/stop' } )
@@ -207,7 +244,7 @@ mpctouch.main = function () {
         ]
     });
 
-    new Ext.Panel({
+    var mainPanel = new Ext.Panel({
         fullscreen: true,
         layout: {
             type: 'vbox',
