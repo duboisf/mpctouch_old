@@ -127,8 +127,6 @@ mpctouch.main = function () {
 
     var currentSongPanel = new Ext.Panel( {} );
 
-    currentSongPanel.update( 'Test' );
-
     var playlistPanel = new Ext.Panel({
         layout: Ext.platform.isPhone ? 'fit' : {
             type: 'vbox',
