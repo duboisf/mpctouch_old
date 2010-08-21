@@ -18,6 +18,20 @@ Function.method( 'curry', function () {
     };
 });
 
+Array.method( 'each', function (func, scope) {
+    for (var i = 0; i < this.length; i++ ) {
+        func.call( scope || this[i], this[i], i, this );
+    }
+});
+
+Array.method( 'map', function (func, scope) {
+    var results = [];
+    this.each( function (e, i, arr) {
+        results.push( func.call( scope || e, e, i, arr ) );
+    });
+    return results;
+});
+
 String.method( 'startsWith', function (str) {
     var match = this.match( '^' + str );
     if ( match ) {
@@ -109,7 +123,7 @@ mpctouch.main = function () {
         }
     });
 
-//    songsStore.load( {} );
+    songsStore.load( {} );
 
     var currentSongPanel = new Ext.Panel( {} );
 
@@ -144,7 +158,6 @@ mpctouch.main = function () {
 
     var carousel = new Ext.Carousel({
         flex: 1,
-//        animation: 'cube',
         items: [
             currentSongPanel,
             playlistPanel
@@ -191,8 +204,10 @@ mpctouch.main = function () {
                     if ( dispatcher[respText.event] instanceof Function ) {
                         dispatcher[respText.event]( respText.data );
                     }
+                    cometLoop();
+                } else {
+                    cometLoop.defer( 5000 );
                 }
-                cometLoop();
             }
         });
     }
