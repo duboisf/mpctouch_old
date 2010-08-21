@@ -100,7 +100,7 @@ object Mpd extends PlayerBasicChangeListener {
 case class Event[T >: Null <: AnyRef](_event: String, _data: T) {
 
   @XmlElement
-  var event = _event
+  private var event = _event
   @XmlElement
   private var data = _data
   @XmlElement
@@ -108,21 +108,6 @@ case class Event[T >: Null <: AnyRef](_event: String, _data: T) {
 
   // Need default constructor for JAXB
   def this() = this("", null)
-
-//  def getSuccess = _success
-//  def setSuccess(status: Boolean) {
-//    _success = status
-//  }
-  
-//  def getEvent = _event
-//  def setEvent(name: String) {
-//    _event = name
-//  }
-
-//  def getData = _data
-//  def setData(data: T) {
-//    _data = data
-//  }
 }
 
 @Path("/player")
@@ -230,18 +215,31 @@ class Songs() {
 }
 
 @XmlRootElement
-class Song(song: MPDSong) {
+class Song(_song: MPDSong) {
 
+  private var song = _song
+
+  @XmlElement
   private var album = safeToString(song.getAlbum())
+  @XmlElement
   private var artist = safeToString(song.getArtist())
+  @XmlElement
   private var comment = song.getComment()
+  @XmlElement
   private var file = song.getFile()
+  @XmlElement
   private var genre = safeToString(song.getGenre())
+  @XmlElement
   private var id = song.getId()
+  @XmlElement
   private var length = song.getLength()
+  @XmlElement
   private var position = song.getPosition()
+  @XmlElement
   private var title = song.getTitle()
+  @XmlElement
   private var track = song.getTrack()
+  @XmlElement
   private var year = song.getYear()
 
   def this() = this(new MPDSong)
@@ -253,52 +251,6 @@ class Song(song: MPDSong) {
       ""
     }
 
-  def getAlbum = album
-  def setAlbum(newalbum: String) {
-    album = newalbum
-  }
-  def getArtist = artist
-  def setArtist(newartist: String) {
-    artist = newartist
-  }
-  def getComment = comment
-  def setComment(newcomment: String) {
-    comment = newcomment
-  }
-  def getFile = file
-  def setFile(newfile: String) {
-    file = newfile
-  }
-  def getGenre = genre
-  def setGenre(newgenre: String) {
-    genre = newgenre
-  }
-  def getId = id
-  def setId(newid: Int) {
-    id = newid
-  }
-  def getLength = length
-  def setLength(newlength: Int) {
-    length = newlength
-  }
-  def getPosition = position
-  def setPosition(newposition: Int) {
-    position = newposition
-  }
-  def getTitle = title
-  def setTitle(newtitle: String) {
-    title = newtitle
-  }
-  def getTrack = track
-  def setTrack(newtrack: Int) {
-    track = newtrack
-  }
-  def getYear = year
-  def setYear(newyear: String) {
-    year = newyear
-  }
-
   override def toString = List(artist, title, album).reduceLeft(_ + " - " + _)
-
 }
 
