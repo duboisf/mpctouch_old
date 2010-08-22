@@ -1,3 +1,5 @@
 *.swp
 target/*
-src/main/webapp/WEB-INF/classes*
+**/target
+webapp/src/main/webapp/sencha
+mpctouch.war

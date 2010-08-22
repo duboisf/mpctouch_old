@@ -43,6 +43,14 @@ define "mpctouch" do
     project.group = GROUP
     manifest["Implementation-Vendor"] = COPYRIGHT
 
+    clean do
+        begin
+            rm "#{project.name}.war"
+        rescue
+            # Ignore exception here
+        end
+    end
+
     desc "The mpctouch REST services"
     define "rest-services" do
         backend_project_name.replace project.name
