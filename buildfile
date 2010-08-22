@@ -30,20 +30,22 @@ ATMOSPHERE_JERSEY = transitive("org.atmosphere:atmosphere-jersey:jar:#{ATMOSPHER
 
 # Fetch java mpd (not in the maven repositories)
 JAVA_MPD_VERSION = '3.3'
-JAVA_MPD = "java-mpd:java-mpd:jar:#{JAVA_MPD_VERSION}"
+JAVA_MPD = "org:javampd:jar:#{JAVA_MPD_VERSION}"
 download artifact(JAVA_MPD) => "http://javampd.googlecode.com/files/javampd-#{JAVA_MPD_VERSION}.jar"
 
-task :deploy => ["mpctouch:webapp:deploy"]
+task :deploy => "mpctouch:webapp:deploy"
 
 desc "mpctouch: an mpd webapp client"
 define "mpctouch" do
 
+    backend_project_name = ""
     project.version = VERSION_NUMBER
     project.group = GROUP
     manifest["Implementation-Vendor"] = COPYRIGHT
 
     desc "The mpctouch REST services"
     define "rest-services" do
+        backend_project_name.replace project.name
         compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD
         compile.using :deprecation => true, :debug => false, :optimise => true
         package :jar
@@ -51,8 +53,10 @@ define "mpctouch" do
 
     desc "The mpctouch webapp"
     define "webapp" do
+        # Remove servlet jar 'cause tomcat no like this jar (it provides its own)
         package(:war).libs -= artifacts(SERVLET)
-        package(:war).with :libs=>[project('rest-services'), project('rest-services').compile.dependencies]
+        backend_project = project(backend_project_name)
+        package(:war).with :libs => [backend_project, backend_project.compile.dependencies]
 
         # Rename to simpler filename
         task :deploy => :package do
