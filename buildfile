@@ -2,7 +2,7 @@
 # Version number for this release
 VERSION_NUMBER = "1.0.0"
 # Group identifier for your projects
-GROUP = "scala-servlet"
+GROUP = "org"
 COPYRIGHT = ""
 
 require 'buildr/scala'
@@ -33,7 +33,7 @@ JAVA_MPD_VERSION = '3.3'
 JAVA_MPD = "java-mpd:java-mpd:jar:#{JAVA_MPD_VERSION}"
 download artifact(JAVA_MPD) => "http://javampd.googlecode.com/files/javampd-#{JAVA_MPD_VERSION}.jar"
 
-task :deploy => ["mpctouch:deploy"]
+task :deploy => ["mpctouch:webapp:deploy"]
 
 desc "mpctouch: an mpd webapp client"
 define "mpctouch" do
@@ -41,22 +41,29 @@ define "mpctouch" do
     project.version = VERSION_NUMBER
     project.group = GROUP
     manifest["Implementation-Vendor"] = COPYRIGHT
-    compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD
-    compile.using :deprecation => true, :debug => false, :optimise => true
 
-    package(:war).libs -= artifacts(SERVLET)
-
-    # Include html and js files and package into the root of the war
-    package(:war).include _('src/ressources/*')
-
-    task :deploy => :package do
-        File.move('target/mpctouch-1.0.0.war', 'target/mpctouch.war')
+    desc "The mpctouch REST services"
+    define "rest-services" do
+        compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD
+        compile.using :deprecation => true, :debug => false, :optimise => true
+        package :jar
     end
 
-    task :deps do
-      puts 'compile.dependencies: ', compile.dependencies
-    end
+    desc "The mpctouch webapp"
+    define "webapp" do
+        package(:war).libs -= artifacts(SERVLET)
+        package(:war).with :libs=>[project('rest-services'), project('rest-services').compile.dependencies]
 
+        # Rename to simpler filename
+        task :deploy => :package do
+            PROPER_NAME = project.name.gsub(':', '-')
+            OLD_FILE = _("target/#{PROPER_NAME}-#{VERSION_NUMBER}.war")
+            PROPER_PARENT_NAME = project.parent.name.gsub(':', '-')
+            NEW_FILE = _("../#{PROPER_PARENT_NAME}.war")
+            puts "Renaming " + OLD_FILE + " to " + NEW_FILE
+            File.move(OLD_FILE, NEW_FILE)
+        end
+    end
 end
 
 # vim: set ft=ruby :
