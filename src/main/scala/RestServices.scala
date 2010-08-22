@@ -5,14 +5,15 @@ import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationExce
 import javax.ws.rs.core.MediaType
 import org.atmosphere.annotation.{Suspend,Broadcast,Resume}
 import org.atmosphere.cpr.{BroadcasterFactory,Broadcaster}
-import org.bff.javampd.MPD
 import org.bff.javampd.events.{PlayerBasicChangeListener,PlayerBasicChangeEvent}
 import org.bff.javampd.monitor.MPDStandAloneMonitor
 import org.bff.javampd.objects.MPDSong
 import java.util.concurrent.Executors
 import org.atmosphere.jersey.{Broadcastable, JerseyBroadcaster}
-import java.util.Date
 import javax.xml.bind.annotation.{XmlElement, XmlSeeAlso, XmlRootElement}
+import java.util.{ArrayList, Date}
+import org.bff.javampd.exception.{MPDPlaylistException, MPDResponseException}
+import org.bff.javampd._
 
 trait Listener {
   def notify(event: String): Event[AnyRef]
@@ -22,17 +23,17 @@ object Mpd extends PlayerBasicChangeListener {
 
   {
     println("Mpd object instantiating")
-    mpd = new MPD("localhost", 6600)
+    mpd = new MyMPD("localhost", 6600)
     val monitor = new MPDStandAloneMonitor(mpd)
     monitor.addPlayerChangeListener(this)
     val thread = new Thread(monitor)
     thread.start
   }
 
-  var mpd: MPD = _
+  var mpd: MyMPD = _
   val success = "{\"success\":true}"
-  def player = mpd.getMPDPlayer()
-  def playlist = mpd.getMPDPlaylist()
+  def player = mpd.getMPDPlayer
+  val playlist = new Playlist(mpd)
 
   override def playerBasicChange(event: PlayerBasicChangeEvent) = {
     println("player change event: " + event.getId)
@@ -111,7 +112,7 @@ case class Event[T >: Null <: AnyRef](_event: String, _data: T) {
 }
 
 @Path("/player")
-class Player {
+class PlayerService {
 
   import Mpd.player
   import Mpd.playlist
@@ -163,7 +164,7 @@ class Player {
     dispatch("volume")
     success
   }
-  
+
   @PUT
   @Path("/playlist/play")
   @Produces(Array(MediaType.APPLICATION_JSON))
@@ -175,7 +176,7 @@ class Player {
     player.playId(songs.get(index))
     success
   }
-  
+
   @GET
   @Path("/volume")
   @Produces(Array(MediaType.APPLICATION_JSON))
@@ -194,7 +195,7 @@ class Player {
   @GET
   @Path("/playlist/songs")
   @Produces(Array(MediaType.APPLICATION_JSON))
-  def getSongList = new Songs(playlist.getSongList())
+  def getSongList = new Songs(playlist.getSongList)
 }
 
 @XmlRootElement
@@ -244,12 +245,7 @@ class Song(_song: MPDSong) {
 
   def this() = this(new MPDSong)
 
-  def safeToString(x: AnyRef): String =
-    if (x != null) {
-      x.toString()
-    } else {
-      ""
-    }
+  def safeToString(x: AnyRef): String = if (x != null) { x.toString() } else { "" }
 
   override def toString = List(artist, title, album).reduceLeft(_ + " - " + _)
 }
