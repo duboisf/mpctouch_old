@@ -38,11 +38,14 @@ task :deploy => "mpctouch:webapp:deploy"
 desc "mpctouch: an mpd webapp client"
 define "mpctouch" do
 
+    scalampd_project_name = ""
     backend_project_name = ""
+
     project.version = VERSION_NUMBER
     project.group = GROUP
     manifest["Implementation-Vendor"] = COPYRIGHT
 
+    # Also clean generated war file
     clean do
         begin
             rm "#{project.name}.war"
@@ -51,11 +54,20 @@ define "mpctouch" do
         end
     end
 
+    compile_options = {:deprecation => true, :debug => false, :optimise => true}
+
+    desc "Scala MPD client library"
+    define "scalampd" do
+        scalampd_project_name.replace project.name
+        compile.using compile_options
+        package :jar
+    end
+
     desc "The mpctouch REST services"
     define "rest-services" do
         backend_project_name.replace project.name
-        compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD
-        compile.using :deprecation => true, :debug => false, :optimise => true
+        compile.with SERVLET, JERSEY, ATMOSPHERE_JERSEY, JAVA_MPD, project(scalampd_project_name)
+        compile.using compile_options
         package :jar
     end
 
@@ -64,7 +76,7 @@ define "mpctouch" do
         # Remove servlet jar 'cause tomcat no like this jar (it provides its own)
         package(:war).libs -= artifacts(SERVLET)
         backend_project = project(backend_project_name)
-        package(:war).with :libs => [backend_project, backend_project.compile.dependencies]
+        package(:war).with :libs => [project(scalampd_project_name), backend_project, backend_project.compile.dependencies]
 
         # Rename to simpler filename
         task :deploy => :package do
