@@ -74,9 +74,9 @@ define "mpctouch" do
     desc "The mpctouch webapp"
     define "webapp" do
         # Remove servlet jar 'cause tomcat no like this jar (it provides its own)
-        package(:war).libs -= artifacts(SERVLET)
         backend_project = project(backend_project_name)
         package(:war).with :libs => [project(scalampd_project_name), backend_project, backend_project.compile.dependencies]
+        package(:war).libs -= artifacts(SERVLET)
 
         # Rename to simpler filename
         task :deploy => :package do

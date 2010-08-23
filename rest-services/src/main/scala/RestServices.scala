@@ -1,19 +1,19 @@
 package org.reliant.mpctouch
 
 import com.sun.jersey.spi.resource.Singleton
+import java.util.{ArrayList, Date}
+import java.util.concurrent.Executors
 import javax.ws.rs.{GET,PUT,Produces,Path,PathParam,FormParam,WebApplicationException}
-import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.{MediaType,UriBuilder}
+import javax.xml.bind.annotation.{XmlElement, XmlSeeAlso, XmlRootElement}
 import org.atmosphere.annotation.{Suspend,Broadcast,Resume}
 import org.atmosphere.cpr.{BroadcasterFactory,Broadcaster}
+import org.atmosphere.jersey.{Broadcastable, JerseyBroadcaster}
+import org.bff.javampd._
 import org.bff.javampd.events.{PlayerBasicChangeListener,PlayerBasicChangeEvent}
+import org.bff.javampd.exception.{MPDPlaylistException, MPDResponseException}
 import org.bff.javampd.monitor.MPDStandAloneMonitor
 import org.bff.javampd.objects.MPDSong
-import java.util.concurrent.Executors
-import org.atmosphere.jersey.{Broadcastable, JerseyBroadcaster}
-import javax.xml.bind.annotation.{XmlElement, XmlSeeAlso, XmlRootElement}
-import java.util.{ArrayList, Date}
-import org.bff.javampd.exception.{MPDPlaylistException, MPDResponseException}
-import org.bff.javampd._
 
 trait Listener {
   def notify(event: String): Event[AnyRef]
@@ -28,6 +28,7 @@ object Mpd extends PlayerBasicChangeListener {
     monitor.addPlayerChangeListener(this)
     val thread = new Thread(monitor)
     thread.start
+    val newMpd = new org.reliant.mpd.Mpd("127.0.0.1", 6600)
   }
 
   var mpd: MyMPD = _
