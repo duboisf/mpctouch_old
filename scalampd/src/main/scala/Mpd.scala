@@ -17,48 +17,60 @@ private[mpd] object DateFormatter {
   def apply(date: Date) = dateFormatter.format(date)
 }
 
-case class Playlist private[mpd] (val name: String, val lastModified: Calendar) {
+sealed abstract class MpdObject(lines: List[String])
+
+case class MpdPlaylist private[mpd] (lines: List[String]) extends MpdObject(lines){
+  import javax.xml.bind.DatatypeConverter.parseDateTime
+  val name = lines(0)
+  val lastModified: Calendar = parseDateTime(lines(1))
+}
+
+case class OldMpdPlaylist private[mpd] (val name: String, val lastModified: Calendar) {
   override def toString = "Playlist name: " + name + ", last modified date: " + DateFormatter(lastModified.getTime)
 }
 
+private[mpd] abstract class MpdObjectAttribute extends Enumeration {
+  protected class AttributeValue(name: String, converter: String => AnyRef) extends Val(name)
+}
+
+private[mpd] object PlaylistAttribute extends MpdObjectAttribute {
+  val Playlist = Value("playlist")
+  val LastModified = Value("Last-Modified")
+}
+
 class PlaylistManager private[mpd] (private val mpd: Mpd) {
-
-  import ParseHelpers._
-
-  private object Attributes extends Enumeration {
-    type Attributes = Value
-    val Playlist = Value("playlist")
-    val LastModified = Value("Last-Modified")
-  }
+  import ParseHelpers.parse
+  import PlaylistAttribute.{Playlist,LastModified}
 
   def list = parsePlaylists(mpd sendCommand Command.ListPlaylists)
 
-  def parsePlaylists(lines: List[String]): List[Playlist] = {
-    lines match {
-      case name :: date :: rest => {
-        val parsedName = parse(name, Attributes.Playlist)
-        val parsedDate = parse(date, Attributes.LastModified, parseDateTime)
-        Playlist(parsedName, parsedDate) :: parsePlaylists(rest)
-      }
-      case Nil => Nil
-      case data => throw new MpdParsingException("Unexpected value '" + data + "'")
-    }
+  def parsePlaylists(lines: List[String]): List[MpdPlaylist] = {
+    parse(lines, List(Playlist, LastModified), MpdPlaylist(_))
   }
 }
 
 private[mpd] object ParseHelpers {
 
-  def parse[E >: Enumeration](line: String, prefix: E): String = parse(line, prefix, unit)
+  def parse[T <: MpdObject](lines: List[String], mpdAttributes: List[MpdObjectAttribute#Value], create: List[String] => T): List[T] = {
+    import Function.tupled
+    def _parse(linesToParse: List[String]): List[T] = {
+      if (linesToParse == Nil) {
+        Nil
+      } else {
+        val (lines, rest) = linesToParse splitAt mpdAttributes.length
+        val parsedLines = lines zip mpdAttributes map tupled { parseLine(_, _) }
+        create(parsedLines) :: _parse(rest)
+      }
+    }
+    _parse(lines) reverse
+  }
 
-  def parse[T, E >: Enumeration](line: String, prefix: E, convert: String => T): T = {
-    val elems = line.split(": ").toList
-    if (elems.length != 2) {
-      throw new MpdParsingException("Result of split not 2 elements")
-    }
-    if (prefix.toString != elems(0)) {
-      throw new MpdParsingException("Prefix " + prefix + " doesn't match parsed prefix " + elems(0))
-    }
-    convert(elems(1))
+  private def parseLine(line: String, expectedAttribute: MpdObjectAttribute#Value): String = {
+    val attributeName :: attributeValue :: Nil = line split ": " toList;
+    if (attributeName == expectedAttribute.toString)
+      attributeValue
+    else
+      throw new MpdParsingException("Was expecting line to start with '" + expectedAttribute + "' but started with '" + attributeName + "' instead")
   }
 
   def unit[T](x: T): T = x
