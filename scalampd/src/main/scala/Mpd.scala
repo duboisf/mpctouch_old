@@ -89,7 +89,7 @@ class PlaylistManager private[mpd] (private val mpd: Mpd) {
   def getPlaylists = parsePlaylists(mpd sendCommand Command.ListPlaylists)
 
   private def parsePlaylists(lines: List[String]): List[MpdPlaylist] = {
-    parse(lines, MpdPlaylist(mpd, _), List(Playlist, LastModified))
+    parse(lines, MpdPlaylist(mpd, _), Playlist :: LastModified :: Nil)
   }
 }
 
@@ -104,7 +104,7 @@ private[mpd] object Command extends Enumeration {
 
 class Mpd(private val _hostname: String, port: Int) {
 
-  val host = InetAddress.getByName(_hostname)
+  val host = InetAddress getByName _hostname
   private var socket: Socket = _
 
   lazy val playlistManager = new PlaylistManager(this)
@@ -130,7 +130,7 @@ class Mpd(private val _hostname: String, port: Int) {
   private[mpd] def sendCommand(command: Command.Value, options: String*) = {
     val out = new BufferedWriter(new OutputStreamWriter(socket getOutputStream))
     out write command.toString
-    options foreach { (opt) => out.write(" " + opt) }
+    options foreach { out write " " + _ }
     out write "\n"
     out.flush
     readOutput
@@ -150,7 +150,7 @@ class Mpd(private val _hostname: String, port: Int) {
             read(line :: lines)
       }
     }
-    read(List()).reverse
+    read(Nil) reverse
   }
 
   def close {
@@ -161,10 +161,9 @@ class Mpd(private val _hostname: String, port: Int) {
 object Mpd extends Application {
   val mpd = new Mpd("127.0.0.1", 6600)
   val playlistManager = mpd.playlistManager
-  println("Saved playlists:")
   val playlist = playlistManager.getPlaylists foreach { playlist =>
     println(playlist)
-    playlist.listSongsInfo
+    playlist.listSongsDetailed
   }
   mpd.close
 }
