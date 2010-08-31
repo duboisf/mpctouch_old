@@ -1,11 +1,13 @@
 package org.reliant.mpd
 
+import Function.tupled
 import java.io._
 import java.net.{InetAddress,Socket,URI}
 import java.util.{Calendar,Date}
 import java.text.SimpleDateFormat
 import javax.xml.bind.DatatypeConverter.parseDateTime
 import scala.io.Source
+import scala.collection.mutable.{Map => MMap}
 
 class MpdException(msg: String) extends Exception(msg)
 class MpdParsingException(msg: String) extends MpdException(msg)
@@ -21,7 +23,6 @@ private[mpd] object DateFormatter {
 }
 
 private[mpd] object ParseHelpers {
-  import Function.tupled
 
   def parse[T <: MpdObject](lines: List[String], create: List[String] => T, mpdAttributes: List[MpdObjectAttribute#Value]): List[T] = {
     def _parse(linesToParse: List[String]): List[T] = {
@@ -43,17 +44,37 @@ private[mpd] object ParseHelpers {
     else
       throw new MpdParsingException("Was expecting line to start with '" + expectedAttribute + "' but started with '" + attributeName + "' instead")
   }
+
+  def parse2[T <: MpdObject](lines: List[String], create: Map[String, String] => T, seperatingAttribute: MpdObjectAttribute#Value): List[T] = {
+    import scala.collection.mutable.{HashMap,ListBuffer}
+
+    val map: MMap[String, String] = new HashMap
+    val results = new ListBuffer[T]
+    lines foreach { line =>
+      val attribute :: value :: Nil = line split ": " toList;
+      if (attribute == seperatingAttribute.toString && map.size > 0) {
+        results += create(map.toMap)
+        map.clear
+      }
+      map(attribute) = value
+    }
+    if (map.size > 0) {
+      results += create(map.toMap)
+    }
+    results.toList
+  }
+}
+
+object TestParsers extends Application {
+  ParseHelpers.parse2(List("file: a nice file", "test: this", "you: dufuss", "file: stuff", "lala: lili"), MpdSong(_), SongAttribute.File) foreach { song => println("Song:\n" + song) }
 }
 
 /*
 * MPD objects
 */
-sealed abstract class MpdObject(rawData: List[String])
+sealed abstract class MpdObject
 
-case class MpdSong private[mpd] (rawData: List[String]) extends MpdObject(rawData) {
-}
-
-case class MpdPlaylist private[mpd] (mpd: Mpd, private val rawData: List[String]) extends MpdObject(rawData){
+case class MpdPlaylist private[mpd] (mpd: Mpd, private val rawData: List[String]) extends MpdObject {
   import javax.xml.bind.DatatypeConverter.parseDateTime
 
   if (rawData.length != 2)
@@ -67,6 +88,17 @@ case class MpdPlaylist private[mpd] (mpd: Mpd, private val rawData: List[String]
   def listSongsDetailed = mpd sendCommand(Command.ListPlaylistInfo, name) foreach println
 }
 
+case class MpdSong private[mpd] (private val rawData: Map[String, String]) extends MpdObject {
+  val file: String = rawData("file")
+  val artist = get("artist")
+  val album = get("album")
+  val song = get("song")
+
+  private def get(key: String) = rawData.getOrElse(key, "")
+
+  override def toString = rawData map { case (k, v) => k + ": " + v } mkString "\n"
+}
+
 /*
 * MPD object attributes
 */
@@ -77,6 +109,10 @@ private[mpd] abstract class MpdObjectAttribute extends Enumeration {
 private[mpd] object PlaylistAttribute extends MpdObjectAttribute {
   val Playlist = Value("playlist")
   val LastModified = Value("Last-Modified")
+}
+
+private[mpd] object SongAttribute extends MpdObjectAttribute {
+  val File = Value("file")
 }
 
 /*
