@@ -83,9 +83,9 @@ case class MpdPlaylist private[mpd] (mpd: Mpd, private val rawData: List[String]
   val name = rawData(0)
   val lastModified: Calendar = parseDateTime(rawData(1))
 
-  def listSongs = mpd sendCommand(Command.ListPlaylist, name) foreach println
+  def listSongs = mpd sendReceive(StoredPlaylistCommand.ListPlaylist, name) foreach println
 
-  def listSongsDetailed = mpd sendCommand(Command.ListPlaylistInfo, name) foreach println
+  def listSongsDetailed = mpd sendReceive(StoredPlaylistCommand.ListPlaylistInfo, name) foreach println
 }
 
 case class MpdSong private[mpd] (private val rawData: Map[String, String]) extends MpdObject {
@@ -116,64 +116,91 @@ private[mpd] object SongAttribute extends MpdObjectAttribute {
 }
 
 /*
+* Commands
+*/
+
+private[mpd] sealed abstract class MpdCommand extends Enumeration
+
+private[mpd] object StoredPlaylistCommand extends MpdCommand {
+  val ListPlaylist = Value("listplaylist")
+  val ListPlaylists = Value("listplaylists")
+  val ListPlaylistInfo = Value("listplaylistinfo")
+}
+
+private[mpd] object PlaybackCommand extends MpdCommand {
+  val Play = Value("play")
+  val PlayId = Value("playid")
+  val Pause = Value("pause")
+  val Next = Value("next")
+  val Previous = Value("previous")
+  val Seek = Value("seek")
+  val SeekId = Value("seekid")
+  val Stop = Value("stop")
+}
+
+/*
 * MPD managers
 */
 class PlaylistManager private[mpd] (private val mpd: Mpd) {
   import ParseHelpers.parse
   import PlaylistAttribute.{Playlist,LastModified}
 
-  def getPlaylists = parsePlaylists(mpd sendCommand Command.ListPlaylists)
+  def getPlaylists = parsePlaylists(mpd sendReceive StoredPlaylistCommand.ListPlaylists)
 
   private def parsePlaylists(lines: List[String]): List[MpdPlaylist] = {
     parse(lines, MpdPlaylist(mpd, _), Playlist :: LastModified :: Nil)
   }
 }
 
-private[mpd] object Command extends Enumeration {
-  type Command = Value
-
-  val Close = Value("close")
-  val ListPlaylists = Value("listplaylists")
-  val ListPlaylist = Value("listplaylist")
-  val ListPlaylistInfo = Value("listplaylistinfo")
-}
-
 class Mpd(private val _hostname: String, port: Int) {
 
   val host = InetAddress getByName _hostname
   private var socket: Socket = _
+  private var mpdVersion: String = _
 
   lazy val playlistManager = new PlaylistManager(this)
 
   println("Instantiating Mpd")
   println("Host: " + host)
   println("Port: " + port)
-  connect
+  connect(host, port)
 
-  protected def connect {
-    socket = new Socket(host, port)
-    val reply = readOutput
-    if (reply != Nil) {
-      throw new MpdConnectionException("Connection failed: " + reply)
+  private def reader = new BufferedReader(new InputStreamReader(socket getInputStream()))
+
+  def version = mpdVersion
+
+  private def connect(hostname: InetAddress, port: Int) {
+    socket = new Socket(hostname, port)
+    val reply = reader.readLine()
+    if (reply == null) {
+      throw new MpdCommunicationException("Got null reply")
+    }
+    reply split ' ' toList match {
+      case "OK" :: "MPD" :: version :: Nil => mpdVersion = version
+      case line => throw new MpdCommunicationException("Could not connect, MPD replied: " + line)
     }
   }
 
   protected def reconnect {
     close
-    connect
+    connect(host, port)
   }
 
-  private[mpd] def sendCommand(command: Command.Value, options: String*) = {
-    val out = new BufferedWriter(new OutputStreamWriter(socket getOutputStream))
-    out write command.toString
-    options foreach { out write " " + _ }
-    out write "\n"
-    out.flush
+  private[mpd] def sendReceive(command: MpdCommand#Value, options: String*) = {
+    sendCommand(command, options)
     readOutput
   }
 
-  private def readOutput: List[String] = {
-    val in = new BufferedReader(new InputStreamReader(socket.getInputStream))
+  private[mpd] def sendCommand(command: MpdCommand#Value, options: String*) = {
+    val out = new BufferedWriter(new OutputStreamWriter(socket getOutputStream))
+    out write command.toString()
+    options foreach { out write " " + _ }
+    out write "\n"
+    out.flush()
+  }
+
+  private[mpd] def readOutput: List[String] = {
+    val in = reader
     def read(lines: List[String]): List[String] = {
       in.readLine match {
         case null => lines
@@ -190,8 +217,10 @@ class Mpd(private val _hostname: String, port: Int) {
   }
 
   def close {
-    socket.close
+    socket close()
   }
+
+  def play = sendCommand(PlaybackCommand.Play)
 }
 
 object Mpd extends Application {
