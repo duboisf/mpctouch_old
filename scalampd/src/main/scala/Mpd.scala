@@ -187,7 +187,7 @@ class Mpd(private val _hostname: String, port: Int) {
   }
 
   private[mpd] def sendReceive(command: MpdCommand#Value, options: String*) = {
-    sendCommand(command, options)
+    sendCommand(command, options: _*)
     readOutput
   }
 
@@ -220,7 +220,15 @@ class Mpd(private val _hostname: String, port: Int) {
     socket close()
   }
 
-  def play = sendCommand(PlaybackCommand.Play)
+  def play(songPos: Int) = sendCommand(PlaybackCommand.Play, songPos.toString)
+
+  def playid(songId: Int) = sendCommand(PlaybackCommand.PlayId, songId.toString)
+
+  def stop = sendCommand(PlaybackCommand.Stop)
+
+  def next = sendCommand(PlaybackCommand.Next)
+
+  def prev = sendCommand(PlaybackCommand.Previous)
 }
 
 object Mpd extends Application {
