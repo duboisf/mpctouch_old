@@ -14,6 +14,7 @@ import org.bff.javampd.events.{PlayerBasicChangeListener,PlayerBasicChangeEvent}
 import org.bff.javampd.exception.{MPDPlaylistException, MPDResponseException}
 import org.bff.javampd.monitor.MPDStandAloneMonitor
 import org.bff.javampd.objects.MPDSong
+import org.reliant.mpd.{Mpd => FredMpd}
 
 trait Listener {
   def notify(event: String): Event[AnyRef]
@@ -28,12 +29,13 @@ object Mpd extends PlayerBasicChangeListener {
     monitor.addPlayerChangeListener(this)
     val thread = new Thread(monitor)
     thread.start
-    val newMpd = new org.reliant.mpd.Mpd("127.0.0.1", 6600)
+    newMpd = new org.reliant.mpd.Mpd("127.0.0.1", 6600)
   }
 
   var mpd: MyMPD = _
   val success = "{\"success\":true}"
   def player = mpd.getMPDPlayer
+  var newMpd: FredMpd = _
   val playlist = new Playlist(mpd)
 
   override def playerBasicChange(event: PlayerBasicChangeEvent) = {

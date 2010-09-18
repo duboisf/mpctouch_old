@@ -141,7 +141,10 @@ private[mpd] object PlaybackCommand extends MpdCommand {
 /*
 * MPD managers
 */
-class PlaylistManager private[mpd] (private val mpd: Mpd) {
+
+sealed abstract class MpdManager
+
+class PlaylistManager private[mpd] (private val mpd: Mpd) extends MpdManager {
   import ParseHelpers.parse
   import PlaylistAttribute.{Playlist,LastModified}
 
@@ -152,6 +155,19 @@ class PlaylistManager private[mpd] (private val mpd: Mpd) {
   }
 }
 
+class PlayerManager private[mpd] (private val mpd: Mpd) extends MpdManager {
+
+  def play(songPos: Int) = mpd.sendCommand(PlaybackCommand.Play, songPos.toString)
+
+  def playid(songId: Int) = mpd.sendCommand(PlaybackCommand.PlayId, songId.toString)
+
+  def stop = mpd sendCommand PlaybackCommand.Stop
+
+  def next = mpd sendCommand PlaybackCommand.Next
+
+  def prev = mpd sendCommand PlaybackCommand.Previous
+}
+
 class Mpd(private val _hostname: String, port: Int) {
 
   val host = InetAddress getByName _hostname
@@ -159,6 +175,7 @@ class Mpd(private val _hostname: String, port: Int) {
   private var mpdVersion: String = _
 
   lazy val playlistManager = new PlaylistManager(this)
+  lazy val player = new PlayerManager(this)
 
   println("Instantiating Mpd")
   println("Host: " + host)
@@ -171,7 +188,7 @@ class Mpd(private val _hostname: String, port: Int) {
 
   private def connect(hostname: InetAddress, port: Int) {
     socket = new Socket(hostname, port)
-    val reply = reader.readLine()
+    val reply = reader readLine;
     if (reply == null) {
       throw new MpdCommunicationException("Got null reply")
     }
@@ -193,10 +210,11 @@ class Mpd(private val _hostname: String, port: Int) {
 
   private[mpd] def sendCommand(command: MpdCommand#Value, options: String*) = {
     val out = new BufferedWriter(new OutputStreamWriter(socket getOutputStream))
-    out write command.toString()
+    out write command.toString
     options foreach { out write " " + _ }
     out write "\n"
-    out.flush()
+    out flush;
+    out close
   }
 
   private[mpd] def readOutput: List[String] = {
@@ -220,15 +238,6 @@ class Mpd(private val _hostname: String, port: Int) {
     socket close()
   }
 
-  def play(songPos: Int) = sendCommand(PlaybackCommand.Play, songPos.toString)
-
-  def playid(songId: Int) = sendCommand(PlaybackCommand.PlayId, songId.toString)
-
-  def stop = sendCommand(PlaybackCommand.Stop)
-
-  def next = sendCommand(PlaybackCommand.Next)
-
-  def prev = sendCommand(PlaybackCommand.Previous)
 }
 
 object Mpd extends Application {
